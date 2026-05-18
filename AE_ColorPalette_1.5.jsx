@@ -193,8 +193,9 @@
                 btnGroup.alignment = ["right", "center"];
                 btnGroup.spacing = 2;
 
-                var copyBtn = btnGroup.add("button", undefined, "Copy");
-                copyBtn.preferredSize = [50, 20];
+                var copyBtn = btnGroup.add("button", undefined, "⧉"); // ⧉ copy icon
+                copyBtn.preferredSize = [28, 20];
+                copyBtn.helpTip = "Copy hex code";
                 copyBtn.hexCode = color.hex;
                 copyBtn.onClick = function() {
                     prompt("Copy this hex code:", this.hexCode);
@@ -204,8 +205,9 @@
                 editDeleteGroup.orientation = "row";
                 editDeleteGroup.spacing = 2;
 
-                var editBtn = editDeleteGroup.add("button", undefined, "Edit");
+                var editBtn = editDeleteGroup.add("button", undefined, "✏"); // ✏ pencil icon
                 editBtn.preferredSize = [24, 20];
+                editBtn.helpTip = "Edit color";
                 editBtn.colorIndex = i;
                 editBtn.onClick = function() {
                     showEditDialog(this.colorIndex);
