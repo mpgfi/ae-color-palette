@@ -1,8 +1,10 @@
 // Color Palette Panel for After Effects
-// Version: 1.5
+// Version: 1.6
 // Last Updated: May 18, 2026
 //
 // CHANGELOG:
+// v1.6 - Copy and Edit buttons replaced with custom-drawn vector icons
+//        (two overlapping rounded rectangles / diagonal pencil)
 // v1.5 - Hex value drawn inside each color swatch (auto-contrasting text)
 //      - Color names removed from UI (kept in data for reference)
 //      - Click swatch to apply color directly to selected color properties
@@ -56,6 +58,19 @@
         } catch(e) {
             colorPalette = defaultPalette.slice();
         }
+    }
+
+    // Draws a rounded-rectangle path on graphics context g
+    function roundRectPath(g, x, y, w, h, r) {
+        g.moveTo(x + r, y);
+        g.lineTo(x + w - r, y);
+        g.curveTo(x + w - r * 0.5, y,       x + w, y + r * 0.5,       x + w, y + r);
+        g.lineTo(x + w, y + h - r);
+        g.curveTo(x + w, y + h - r * 0.5,   x + w - r * 0.5, y + h,   x + w - r, y + h);
+        g.lineTo(x + r, y + h);
+        g.curveTo(x + r * 0.5, y + h,       x, y + h - r * 0.5,       x, y + h - r);
+        g.lineTo(x, y + r);
+        g.curveTo(x, y + r * 0.5,           x + r * 0.5, y,           x + r, y);
     }
 
     function hexToRgb(hex) {
@@ -193,25 +208,77 @@
                 btnGroup.alignment = ["right", "center"];
                 btnGroup.spacing = 2;
 
-                var copyBtn = btnGroup.add("button", undefined, "⧉"); // ⧉ copy icon
-                copyBtn.preferredSize = [28, 20];
-                copyBtn.helpTip = "Copy hex code";
-                copyBtn.hexCode = color.hex;
-                copyBtn.onClick = function() {
-                    prompt("Copy this hex code:", this.hexCode);
+                // Copy icon — two overlapping rounded rectangles
+                var copyIcon = btnGroup.add("statictext", undefined, "");
+                copyIcon.preferredSize = [26, 22];
+                copyIcon.helpTip = "Copy hex code";
+                copyIcon.hexCode = color.hex;
+                copyIcon.onDraw = function() {
+                    var g = this.graphics;
+                    var iw = this.size.width, ih = this.size.height;
+                    var pen   = g.newPen(g.PenType.SOLID_COLOR, [0.72, 0.72, 0.72, 1], 1.5);
+                    var bgFill = g.newBrush(g.BrushType.SOLID_COLOR, [0.24, 0.24, 0.24, 1]);
+                    var pw = iw * 0.60, ph = ih * 0.72, r = 2.5;
+                    // Back page (top-right)
+                    g.newPath();
+                    roundRectPath(g, iw - pw - 1, 1, pw, ph, r);
+                    g.strokePath(pen);
+                    // Front page (bottom-left), filled to occlude back page
+                    g.newPath();
+                    roundRectPath(g, 1, ih - ph - 1, pw, ph, r);
+                    g.fillPath(bgFill);
+                    g.strokePath(pen);
                 };
+                copyIcon.addEventListener("click", function() {
+                    prompt("Copy this hex code:", this.hexCode);
+                });
 
                 var editDeleteGroup = btnGroup.add("group");
                 editDeleteGroup.orientation = "row";
                 editDeleteGroup.spacing = 2;
 
-                var editBtn = editDeleteGroup.add("button", undefined, "✏"); // ✏ pencil icon
-                editBtn.preferredSize = [24, 20];
-                editBtn.helpTip = "Edit color";
-                editBtn.colorIndex = i;
-                editBtn.onClick = function() {
-                    showEditDialog(this.colorIndex);
+                // Edit icon — diagonal pencil (tip lower-left, eraser upper-right)
+                var editIcon = editDeleteGroup.add("statictext", undefined, "");
+                editIcon.preferredSize = [22, 22];
+                editIcon.helpTip = "Edit color";
+                editIcon.colorIndex = i;
+                editIcon.onDraw = function() {
+                    var g = this.graphics;
+                    var iw = this.size.width, ih = this.size.height;
+                    var pen    = g.newPen(g.PenType.SOLID_COLOR, [0.72, 0.72, 0.72, 1], 1.5);
+                    var bgFill = g.newBrush(g.BrushType.SOLID_COLOR, [0.24, 0.24, 0.24, 1]);
+                    // Body corners (parallelogram, top-right → bottom-left)
+                    var bx = iw*0.68, by = ih*0.05;
+                    var ex = iw*0.94, ey = ih*0.30;
+                    var fx = iw*0.44, fy = ih*0.80;
+                    var cx = iw*0.18, cy = ih*0.55;
+                    // Tip point
+                    var tx = iw*0.05, ty = ih*0.95;
+                    // Eraser separator (25% from top along body edges)
+                    var t = 0.22;
+                    var sLx = bx+(cx-bx)*t, sLy = by+(cy-by)*t;
+                    var sRx = ex+(fx-ex)*t, sRy = ey+(fy-ey)*t;
+                    // Pencil body
+                    g.newPath();
+                    g.moveTo(bx, by); g.lineTo(ex, ey);
+                    g.lineTo(fx, fy); g.lineTo(cx, cy);
+                    g.closePath();
+                    g.fillPath(bgFill);
+                    g.strokePath(pen);
+                    // Tip triangle
+                    g.newPath();
+                    g.moveTo(cx, cy); g.lineTo(fx, fy); g.lineTo(tx, ty);
+                    g.closePath();
+                    g.fillPath(bgFill);
+                    g.strokePath(pen);
+                    // Eraser separator line
+                    g.newPath();
+                    g.moveTo(sLx, sLy); g.lineTo(sRx, sRy);
+                    g.strokePath(pen);
                 };
+                editIcon.addEventListener("click", function() {
+                    showEditDialog(this.colorIndex);
+                });
 
                 var deleteBtn = editDeleteGroup.add("button", undefined, "×");
                 deleteBtn.preferredSize = [24, 20];
