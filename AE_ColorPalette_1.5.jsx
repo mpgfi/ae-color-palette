@@ -5,6 +5,8 @@
 // CHANGELOG:
 // v1.6 - Copy and Edit buttons replaced with custom-drawn vector icons
 //        (two overlapping rounded rectangles / diagonal pencil)
+//      - Icon colors probe actual panel background at draw time,
+//        adapting automatically to AE dark and light themes
 // v1.5 - Hex value drawn inside each color swatch (auto-contrasting text)
 //      - Color names removed from UI (kept in data for reference)
 //      - Click swatch to apply color directly to selected color properties
@@ -58,6 +60,23 @@
         } catch(e) {
             colorPalette = defaultPalette.slice();
         }
+    }
+
+    // Returns { pen, bgFill } adapted to the element's actual panel background.
+    // Probes the parent element's backgroundColor at draw time so both dark and
+    // light AE themes render correctly without any hardcoded color values.
+    function iconColors(g, parentElement) {
+        var bg = [0.24, 0.24, 0.24, 1]; // fallback: AE dark mode
+        try {
+            var probe = parentElement.graphics.backgroundColor;
+            if (probe && probe.color) bg = probe.color;
+        } catch(e) {}
+        var isDark = bg[0] < 0.5;
+        var penRGB = isDark ? [0.72, 0.72, 0.72, 1] : [0.22, 0.22, 0.22, 1];
+        return {
+            pen:    g.newPen(g.PenType.SOLID_COLOR, penRGB, 1.5),
+            bgFill: g.newBrush(g.BrushType.SOLID_COLOR, bg)
+        };
     }
 
     // Draws a rounded-rectangle path on graphics context g
@@ -216,8 +235,8 @@
                 copyIcon.onDraw = function() {
                     var g = this.graphics;
                     var iw = this.size.width, ih = this.size.height;
-                    var pen   = g.newPen(g.PenType.SOLID_COLOR, [0.72, 0.72, 0.72, 1], 1.5);
-                    var bgFill = g.newBrush(g.BrushType.SOLID_COLOR, [0.24, 0.24, 0.24, 1]);
+                    var ic = iconColors(g, this.parent);
+                    var pen = ic.pen, bgFill = ic.bgFill;
                     var pw = iw * 0.60, ph = ih * 0.72, r = 2.5;
                     // Back page (top-right)
                     g.newPath();
@@ -245,8 +264,8 @@
                 editIcon.onDraw = function() {
                     var g = this.graphics;
                     var iw = this.size.width, ih = this.size.height;
-                    var pen    = g.newPen(g.PenType.SOLID_COLOR, [0.72, 0.72, 0.72, 1], 1.5);
-                    var bgFill = g.newBrush(g.BrushType.SOLID_COLOR, [0.24, 0.24, 0.24, 1]);
+                    var ic = iconColors(g, this.parent);
+                    var pen = ic.pen, bgFill = ic.bgFill;
                     // Body corners (parallelogram, top-right → bottom-left)
                     var bx = iw*0.68, by = ih*0.05;
                     var ex = iw*0.94, ey = ih*0.30;
